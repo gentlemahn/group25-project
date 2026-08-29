@@ -7,7 +7,7 @@ class FarmPlot:
     crop: str
     location_name: str
     latitude: float
-    longtitude: float
+    longitude: float
     plot_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     created_at: str = field(default_factory=lambda:datetime.now().isoformat())
 
@@ -16,7 +16,7 @@ class FarmPlot:
             "crop": self.crop,
             "location_name": self.location_name,
             "latitude": self.latitude,
-            "longtitude": self.longtitude,
+            "longitude": self.longitude,
             "plot_id": self.plot_id,
             "created_at": self.created_at
         }
@@ -27,7 +27,7 @@ class FarmPlot:
             crop = data["crop"],
             location_name = data["location_name"],
             latitude = data["latitude"],
-            longtitude = data["longtitude"],
+            longitude = data["longitude"],
             plot_id = data["plot_id"],
             created_at = data["created_at"]
         )
@@ -39,7 +39,7 @@ class LogEntry:
     date: str
     crop: str
     location_name: str
-    temperature_Celcius: float
+    temperature_Celsius: float
     humidity_pct: float
     advice_summary: str
     log_id:  str = field(default_factory=lambda: str(uuid.uuid4()))
@@ -51,14 +51,14 @@ class LogEntry:
             "date": self.date,
             "crop": self.crop,
             "location_name": self.location_name,
-            "temperature_Celsius": self.temperature_Celcius,
+            "temperature_Celsius": self.temperature_Celsius,
             "humidity_pct": self.humidity_pct,
             "advice_summary": self.advice_summary
         }
          
 
 if __name__ == "__main__":
-    plot = FarmPlot(crop="maize", location_name="Nsukka", latitude=6.86, longtitude=7.40)
+    plot = FarmPlot(crop="maize", location_name="Nsukka", latitude=6.86, longitude=7.40)
     print(plot)
 
     data = plot.to_dictionary()
@@ -76,7 +76,7 @@ if __name__ == "__main__":
         date = "2026-08-29",
         crop = "maize",
         location_name="Nsukka",
-        temperature_Celcius = 27.5,
+        temperature_Celsius = 27.5,
         humidity_pct = 68.0,
         advice_summary = "Good conditions for planting.",
     )
