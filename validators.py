@@ -26,4 +26,19 @@ def validate_coordinate(value: str, kind: str = "latitude") -> float:
     if not DECIMAL_NUMBER_PATTERN.match(value):
         raise ValidationError(f"{kind} must be a decimal number, e.g. '9.0765'.")
     number = float(value)
-    if kind == "latitude" and not
+    if kind == "latitude" and not (-90.0 <= number <= 90.0):
+        raise ValidationError("Latitude must be between -90 and 90.")
+    if kind == "longitude" and not (-180.0 <= number <= 180.0):
+        raise ValidationError("Longitude must be between -180 and 180.")
+    return number
+
+
+def validate_date(date_str: str) -> str:
+    date_str = date_str.strip()
+    if not DATE_PATTERN.match(date_str):
+        raise ValidationError("Date must be in YYYY-MM-DD format.")
+    try:
+        datetime.strptime(date_str, "%Y-%m-%d")
+    except ValueError:
+        raise ValidationError(f"'{date_str}' is not a real calendar date.")
+    return date_str
