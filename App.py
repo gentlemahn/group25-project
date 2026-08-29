@@ -2,37 +2,24 @@ import streamlit as st
 import random
 from datetime import datetime
 from config import SUPPORTED_CROPS
-from data_models import FarmPlot, LogEntry
-from validators import validate_location_name, validate_coordinate, validate_date, ValidationError
-from weather_service import WeatherService, WeatherServiceError
-from storage import PlotStorage, StorageError
 
-weather_service = WeatherService()
-storage = PlotStorage()
+dummy_plots = [
+        {"crop": "Maize", "location_name": "Nsukka", "logs": 2},
+        {"crop": "Cassava", "location_name": "Karu", "logs": 0}
+    ]
 
-try:
-    saved_plots = storage.load_plots()
-except StorageError as e:
-    saved_plots = []
-    st.error(f"Couldn't load plots: {e}")
-
-try:
-    saved_logs = storage.load_logs()
-except StorageError as e:
-    saved_logs = []
-    st.error(f"Couldn't load logs: {e}")
-
-
+dummy_logs =[
+        {"date": "2026-08-20", "activity": "Weeding", "temp": 27},
+        {"date": "2026-08-005", "activity": "Planting", "temp": 25}
+    ]
 
 st.set_page_config(page_title="Smaart Farming Advisor", page_icon="🧑‍🌾", layout="wide")
 st.title("Smart Farming And Crop Planting Advisor")
 
 season = st.selectbox("Season", ["Spring (rain)", "Summer (sun)", "Autumn (leaves)", "Winter (snow)"])
 
-#------------------------------------------------CSS DESIGN-------------------------------------------------------------
-
 season_config = {
-    "Spring (rain)": {"emoji": "`", "count": 100, "min_dur": 1.2, "max_dur": 2.5, "anim": "rainFall", "ground": "#6B8E23", "ground2": "#556B2F"},
+    "Spring (rain)": {"emoji": "`", "count": 500, "min_dur": 1.2, "max_dur": 2.5, "anim": "rainFall", "ground": "#6B8E23", "ground2": "#556B2F"},
     "Summer (sun)": {"emoji": "", "count": 18, "min_dur": 2, "max_dur": 4, "anim": "sunSparkle", "ground": "#DAA520", "ground2": "#B8860B"},
     "Autumn (leaves)": {"emoji": "🍂", "count": 22, "min_dur": 5, "max_dur": 9, "anim": "leafSwirl", "ground": "#C1440E", "ground2": "#8B4513"},
     "Winter (snow)": {"emoji": "❄️", "count": 30, "min_dur": 6, "max_dur": 11, "anim": "snowDrift", "ground": "#E8F1F8", "ground2": "#C9DCE8"},
@@ -60,6 +47,39 @@ for _ in range(40):
     sdelay = random.uniform(0, 4)
     stars_html += f'<div class="star" style="left:{sleft}%; top:{stop}%; width:{ssize}px; height:{ssize}px; animation-delay:{sdelay}s;"></div>'
 
+day_night_stages = [
+    (0,   "#FFDAB9", "#87CEEB"),
+    (16,  "#FFD580", "#FFA500"),
+    (32,  "#C97A5A", "#8A5A8A"),
+    (48,  "#0D0D14", "#050508"),
+    (64,  "#0D0D18", "#1A1A2E"),
+    (80,  "#E88C6E", "#FFB88C"),
+    (100, "#FFDAB9", "#87CEEB"),
+]
+
+def lerp_color(c1, c2, t):
+    c1 = c1.lstrip("#")
+    c2 = c2.lstrip("#")
+    r1, g1, b1 = int(c1[0:2], 16), int(c1[2:4], 16), int(c1[4:6], 16)
+    r2, g2, b2 = int(c2[0:2], 16), int(c2[2:4], 16), int(c2[4:6], 16)
+    r = round(r1 + (r2 - r1) * t)
+    g = round(g1 + (g2 - g1) * t)
+    b = round(b1 + (b2 - b1) * t)
+    return f"#{r:02X}{g:02X}{b:02X}"
+
+def color_at_percent(p):
+    for i in range(len(day_night_stages) - 1):
+        p0, top0, bot0 = day_night_stages[i]
+        p1, top1, bot1 = day_night_stages[i + 1]
+        if p0 <= p <= p1:
+            t = 0 if p1 == p0 else (p - p0) / (p1 - p0)
+            return lerp_color(top0, top1, t), lerp_color(bot0, bot1, t)
+    return day_night_stages[-1][1], day_night_stages[-1][2]
+
+keyframe_lines = ""
+for pct in range(0, 101):
+    top, bottom = color_at_percent(pct)
+    keyframe_lines += f"{pct}% {{ background: linear-gradient(180deg, {top}, {bottom}); }}\n"
 
 st.markdown(f"""
 <style>
@@ -220,13 +240,9 @@ div[data-testid="stForm"] {{
 </div>
 """, unsafe_allow_html=True)
 
-
-#----------------------------------------------------MAIN CODE-----------------------------------------------------------------
-
-
 col1, col2 = st.columns(2)
-col1.metric("Total plots", len(saved_plots))
-col2.metric("Total Logs", len(saved_logs))
+col1.metric("Total plots", len(dummy_plots))
+col2.metric("Total Logs", len(dummy_logs))
 
 tab1 , tab2, tab3, = st.tabs(["Plant advisor", "Saved Plots", "Log history"])
 
@@ -245,70 +261,20 @@ with tab1:
         submitted = st.form_submit_button("Get Planting advice")
 
     if submitted:
-        try:
-            clean_location = validate_location_name(location_name)
-            clean_lat = validate_coordinate(latitude, "latitude")
-            clean_lon = validate_coordinate(longtitude, "longitude")
-            clean_date = validate_date(str(date))
+        st.success(f"{crop} at {location_name} on {date}")
 
-            conditions = weather_service.get_conditions(clean_lat, clean_lon)
-
-            plot = FarmPlot(
-                crop=crop,
-                location_name=clean_location,
-                latitude=clean_lat,
-                longitude=clean_lon,
-            )
-            storage.save_plot(plot)
-            log = LogEntry(
-            plot_id=plot.plot_id,
-            date=clean_date,
-            crop=crop,
-            location_name=clean_location,
-            temperature_Celsius =conditions["temperature_Celsius"],
-            humidity_pct=conditions["humidity_pct"],
-            advice_summary="AI advice not available yet.",
-            )
-            storage.append_log(log)
-            st.rerun()
-
-            st.success(f"[{datetime.now().strftime('%H:%M:%S')}] Saved {crop} at {clean_location}. Current temp: {conditions['temperature_Celsius']}°C")
-
-
-        except ValidationError as e:
-            st.error(f"Invalid input: {e}")
-        except WeatherServiceError as e:
-            st.error(f"Weather error: {e}")
-        except StorageError as e:
-            st.error(f"Storage error: {e}")
-
-    st.divider()
+st.divider()
 
 with tab2:
     st.subheader("Saved Plots")
-    for p in saved_plots:
-        col_a, col_b = st.columns([4, 1])
-        with col_a:
-            st.write(f"{p['crop']} -- {p['location_name']}")
-        with col_b:
-            if st.button("Delete", key = f"del_{p['plot_id']}"):
-                try:
-                    storage.delete_plot(p['plot_id'])
-                    st.rerun()
-                except StorageError as error:
-                    st.error(f"Couldn't delete: {error}")
+    
+    for p in dummy_plots:
+        st.write(f"{p['crop']}, -- {p['location_name']}  ({p['logs']} logs)")
 
-    st.divider()
+st.divider()
 
 with tab3:
     st.subheader("Log history")
-
-    if st.button("Clear all logs"):
-        try:
-            storage.clear_logs()
-            st.rerun()
-        except StorageError as e:
-            st.error(f"Couldn't clear logs: {e}")
-
-    for log in saved_logs:
-        st.write(f"{log['date']} — {log['crop']} at {log['location_name']} ({log['temperature_Celsius']}°C, {log['humidity_pct']}% humidity)")
+    
+    for log in dummy_logs:
+        st.write(f"{log['date']}  --  {log['activity']} ({log['temp']} °C)")
