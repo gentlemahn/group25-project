@@ -80,4 +80,5 @@ if __name__ == "__main__":
         humidity_pct = 68.0,
         advice_summary = "Good conditions for planting.",
     )
+    
     print(log.to_row())
