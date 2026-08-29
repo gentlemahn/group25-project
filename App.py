@@ -29,6 +29,8 @@ st.title("Smart Farming And Crop Planting Advisor")
 
 season = st.selectbox("Season", ["Spring (rain)", "Summer (sun)", "Autumn (leaves)", "Winter (snow)"])
 
+#------------------------------------------------CSS DESIGN-------------------------------------------------------------
+
 season_config = {
     "Spring (rain)": {"emoji": "`", "count": 100, "min_dur": 1.2, "max_dur": 2.5, "anim": "rainFall", "ground": "#6B8E23", "ground2": "#556B2F"},
     "Summer (sun)": {"emoji": "", "count": 18, "min_dur": 2, "max_dur": 4, "anim": "sunSparkle", "ground": "#DAA520", "ground2": "#B8860B"},
@@ -217,6 +219,10 @@ div[data-testid="stForm"] {{
     {particles_html}
 </div>
 """, unsafe_allow_html=True)
+
+
+#----------------------------------------------------MAIN CODE-----------------------------------------------------------------
+
 
 col1, col2 = st.columns(2)
 col1.metric("Total plots", len(saved_plots))
