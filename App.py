@@ -1,6 +1,7 @@
 import streamlit as st
 import random
 from datetime import datetime
+from config import SUPPORTED_CROPS
 
 dummy_plots = [
         {"crop": "Maize", "location_name": "Nsukka", "logs": 2},
@@ -248,7 +249,7 @@ tab1 , tab2, tab3, = st.tabs(["Plant advisor", "Saved Plots", "Log history"])
 
 with tab1:
     with st.form("plot_form"):
-        crop = st.selectbox("Crop", ["Maize", "Cassava", "Tomato", "Rice"])
+        crop = st.selectbox("Crop", SUPPORTED_CROPS)
         location_name = st.text_input("Location name", placeholder="e.g Nsukka")
         col3, col4 = st.columns(2)
         with col3:
