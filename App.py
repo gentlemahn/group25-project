@@ -24,7 +24,7 @@ except StorageError as e:
 
 
 
-st.set_page_config(page_title="Smaart Farming Advisor", page_icon="🧑‍🌾", layout="wide")
+st.set_page_config(page_title="Smart Farming Advisor", page_icon="🧑‍🌾", layout="wide")
 st.title("Smart Farming And Crop Planting Advisor")
 
 season = st.selectbox("Season", ["Spring (rain)", "Summer (sun)", "Autumn (leaves)", "Winter (snow)"])
@@ -270,10 +270,11 @@ with tab1:
             advice_summary="AI advice not available yet.",
             )
             storage.append_log(log)
+            st.session_state.last_success = (
+                f"[{datetime.now().strftime('%H:%M:%S')}] Saved {crop} at {clean_location}. "
+                f"Current temp: {conditions['temperature_Celsius']}°C"
+            )
             st.rerun()
-
-            st.success(f"[{datetime.now().strftime('%H:%M:%S')}] Saved {crop} at {clean_location}. Current temp: {conditions['temperature_Celsius']}°C")
-
 
         except ValidationError as e:
             st.error(f"Invalid input: {e}")
@@ -282,7 +283,11 @@ with tab1:
         except StorageError as e:
             st.error(f"Storage error: {e}")
 
+    if "last_success" in st.session_state:
+        st.success(st.session_state.last_success)
+
     st.divider()
+    
 
 with tab2:
     st.subheader("Saved Plots")
