@@ -11,7 +11,7 @@ class FarmPlot:
     plot_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     created_at: str = field(default_factory=lambda:datetime.now().isoformat())
 
-    def to_dictionary(self) -> dict:
+    def to_dict(self) -> dict:
         return{
             "crop": self.crop,
             "location_name": self.location_name,
@@ -22,7 +22,7 @@ class FarmPlot:
         }
     
     @classmethod
-    def from_dictionary(cls, data: dict) -> "FarmPlot":
+    def from_dict(cls, data: dict) -> "FarmPlot":
         return cls(
             crop = data["crop"],
             location_name = data["location_name"],
@@ -61,13 +61,13 @@ if __name__ == "__main__":
     plot = FarmPlot(crop="maize", location_name="Nsukka", latitude=6.86, longitude=7.40)
     print(plot)
 
-    data = plot.to_dictionary()
+    data = plot.to_dict()
     print(data)
 
-    rebuilt = FarmPlot.from_dictionary(data)
+    rebuilt = FarmPlot.from_dict(data)
     print(rebuilt)
 
-    assert plot.to_dictionary() == rebuilt.to_dictionary()
+    assert plot.to_dict() == rebuilt.to_dict()
     print("Round-trip works!")
 
 

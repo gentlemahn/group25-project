@@ -1,0 +1,2 @@
+log_id,plot_id,date,crop,location_name,temperature_Celsius,humidity_pct,advice_summary
+c54aa28c-81c2-48aa-b369-6002dd6eaf8c,7897dbab-4ae0-4615-bbcf-b66fd3ba7ddc,2026-02-12,Cassava,Benin,34.0,17,AI advice not available yet.

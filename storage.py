@@ -57,6 +57,20 @@ class PlotStorage:
         except OSError:
             raise StorageError("Couldn't update the plots file.")
 
+    def clear_plots(self):
+        try:
+            with open(self.plots_file, "w") as f:
+                json.dump([], f, indent=2)
+        except OSError:
+            raise StorageError("Couldn't clear the plots file.")
+
+    def clear_logs(self):
+        try:
+            if os.path.exists(self.logs_file):
+                os.remove(self.logs_file)
+        except OSError:
+            raise StorageError("Couldn't clear the logs file.")
+
     # ---------- logs (csv) ----------
 
     def append_log(self, entry):

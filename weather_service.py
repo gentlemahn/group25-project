@@ -1,6 +1,6 @@
 import requests
 
-from config import OPEN_METEO_URL
+from config import OPEN_METEO_FORECAST_URL
 
 
 class WeatherServiceError(Exception):
@@ -22,7 +22,7 @@ class WeatherService:
         }
 
         try:
-            response = requests.get(OPEN_METEO_URL, params=params, timeout=10)
+            response = requests.get(OPEN_METEO_FORECAST_URL, params=params, timeout=10)
         except requests.exceptions.Timeout:
             raise WeatherServiceError("The weather service took too long to respond. Try again in a bit.")
         except requests.exceptions.ConnectionError:
@@ -42,7 +42,7 @@ class WeatherService:
             daily = data["daily"]
 
             conditions = {
-                "temperature_c": current["temperature_2m"],
+                "temperature_Celsius": current["temperature_2m"],
                 "humidity_pct": current["relative_humidity_2m"],
                 "soil_temperature_c": current["soil_temperature_0cm"],
                 "soil_moisture": current["soil_moisture_0_to_1cm"],
