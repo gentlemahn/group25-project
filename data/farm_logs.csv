@@ -1,0 +1,5 @@
+log_id,plot_id,date,crop,location_name,temperature_Celsius,humidity_pct,advice_summary
+cbad6afb-1d09-470d-af9e-562f0002e36e,9f9b0113-5ff5-4f4a-a44b-bff2554f0d4e,2026-10-30,Maize,Adygea,24.8,42,"**1. Should you plant now?**  
+**Yes, but only if you can irrigate.** Soil temperature (24.2 °C) is ideal for fast germination, but the soil is drying out and no rain is forecasted.
+
+**2. Best plantin"
