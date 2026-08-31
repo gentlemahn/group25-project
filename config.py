@@ -1,5 +1,7 @@
 import os
-
+from dotenv import load_dotenv
+load_dotenv()
+print("loaded key is", os.environ.get("GEMINI_API_KEY", "NOT_FOUND"))
 OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 SUPPORTED_CROPS = ["Maize", "Rice", "Cassava", "Yam", "Sorghum"]
 

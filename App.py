@@ -1,6 +1,6 @@
 import streamlit as st
 import random
-from datetime import datetime, timedelta
+from datetime import date as dt_date, datetime, timedelta
 from config import SUPPORTED_CROPS
 
 # Real backend modules — replacing the dummy data above.
@@ -16,6 +16,21 @@ from AI_advisor import AIAdvisor, AIAdvisorError
 # connections, so creating them fresh each rerun is fine and simple.
 weather_service = WeatherService()
 storage = PlotStorage()
+
+MONTHS = {
+    "January": 1,
+    "February": 2,
+    "March": 3,
+    "April": 4,
+    "May": 5,
+    "June": 6,
+    "July": 7,
+    "August": 8,
+    "September": 9,
+    "October": 10,
+    "November": 11,
+    "December": 12
+}
 
 # The AIAdvisor is a bit more expensive to create (it validates the API key
 # and sets up the Gemini client), and if the key is missing we want the
@@ -413,6 +428,7 @@ div[data-testid="stForm"] {{
 
 .fade-in {{ animation: fadeIn 1.2s ease; }}
 @keyframes fadeIn {{ from {{ opacity: 0; }} to {{ opacity: 1; }} }}
+
 </style>
 
 <div class="scene fade-in">
@@ -440,7 +456,22 @@ with tab1:
             latitude = st.text_input("Latitude", placeholder="6.86")
         with col4:
             longitude = st.text_input("Longitude", placeholder="7.40")
-        date = st.date_input("Planning date")
+
+
+        st.write(" ")
+        st.write("Planting date:")    
+        col5, col6, col7 = st.columns(3)
+        with col5:
+            day = st.selectbox("Day", range(1, 32))
+
+        with col6:
+            month_name = st.selectbox("Month", list(MONTHS.keys()))
+            month = MONTHS[month_name]
+
+        with col7:
+            year = st.selectbox("Year", range(2026, 2035))
+
+        planning_date = dt_date(year, month, day)
 
         submitted = st.form_submit_button("Get Planting advice")
 
@@ -453,7 +484,7 @@ with tab1:
             clean_location = validate_location_name(location_name)
             clean_lat = validate_coordinate(latitude, "latitude")
             clean_lon = validate_coordinate(longitude, "longitude")
-            clean_date = validate_date(str(date))
+            clean_date = validate_date(str(planning_date))
         except ValidationError as e:
             st.error(f"Invalid input: {e}")
             # st.stop() halts execution of the rest of the script for this
@@ -468,11 +499,6 @@ with tab1:
         except WeatherServiceError as e:
             st.error(f"Weather error: {e}")
             st.stop()
-
-        # TEMPORARY DEBUG LINE — shows the raw numbers being checked against
-        # the warning thresholds, so you can confirm real data is flowing in.
-        # Delete this line once you've verified it's working correctly.
-        st.write("DEBUG - raw weather data:", conditions)
 
         # --- Step 3: get AI planting advice (your AIAdvisor) ---
         if advisor is None:
