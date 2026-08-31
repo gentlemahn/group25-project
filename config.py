@@ -1,9 +1,11 @@
 import os
-
+from dotenv import load_dotenv
+load_dotenv()
+print("loaded key is", os.environ.get("GEMINI_API_KEY", "NOT_FOUND"))
 OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-GEMINI_MODEL_NAME = "gemini-2.0-flash"
+GEMINI_MODEL_NAME = "gemini-3.6-flash"
 
 DATA_DIR = "data"
 PLOTS_FILE = os.path.join(DATA_DIR, "farm_plots.json")

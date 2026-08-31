@@ -16,7 +16,11 @@ class WeatherService:
             "latitude": latitude,
             "longitude": longitude,
             "current": "temperature_2m,relative_humidity_2m,soil_temperature_0cm,soil_moisture_0_to_1cm",
-            "daily": "precipitation_sum",
+            # Added temperature_2m_max: gives a forecasted daily HIGH for each
+            # of the next 7 days, not just the single current-moment reading.
+            # Needed for a genuine multi-day heatwave check, since the
+            # current temperature alone only tells you about right now.
+            "daily": "precipitation_sum,temperature_2m_max",
             "forecast_days": 7,
             "timezone": "auto",
         }
@@ -47,6 +51,7 @@ class WeatherService:
                 "soil_temperature_c": current["soil_temperature_0cm"],
                 "soil_moisture": current["soil_moisture_0_to_1cm"],
                 "rain_forecast_mm": daily["precipitation_sum"],  # list of 7 values, one per day
+                "temperature_max_forecast_c": daily["temperature_2m_max"],  # 7 daily highs
                 "forecast_dates": daily["time"],
             }
         except KeyError as missing:
