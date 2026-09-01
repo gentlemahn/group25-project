@@ -156,6 +156,13 @@ def check_weather_threats(conditions: dict) -> list:
         if mm is not None and mm >= HEAVY_RAIN_MM:
             day_label = forecast_dates[i] if i < len(forecast_dates) else f"day {i + 1}"
             warnings.append(f"Heavy rain expected on {day_label} ({mm}mm) — risk of waterlogging or erosion.")
+        
+    TOTAL_WEEKLY_RAIN_MM = 70  # cumulative rain over the week that's worth flagging
+
+    # --- Sustained heavy rain check (total, not just single-day) ---
+    total_rain = sum(mm for mm in rain_forecast if mm is not None)
+    if total_rain >= TOTAL_WEEKLY_RAIN_MM:
+        warnings.append(f"Sustained heavy rain expected this week — {total_rain}mm total forecast. Risk of waterlogging.")
 
     # --- Dry spell check ---
     # We scan the week for the LONGEST run of consecutive dry days,
@@ -451,13 +458,7 @@ with tab1:
     with st.form("plot_form"):
         crop = st.selectbox("Crop", SUPPORTED_CROPS)
         location_name = st.text_input("Location name", placeholder="e.g Nsukka")
-        col3, col4 = st.columns(2)
-        with col3:
-            latitude = st.text_input("Latitude", placeholder="6.86")
-        with col4:
-            longitude = st.text_input("Longitude", placeholder="7.40")
-
-
+        
         st.write(" ")
         st.write("Planting date:")    
         col5, col6, col7 = st.columns(3)
@@ -482,9 +483,10 @@ with tab1:
         # characters in it — fail cheap and fast first.
         try:
             clean_location = validate_location_name(location_name)
-            clean_lat = validate_coordinate(latitude, "latitude")
-            clean_lon = validate_coordinate(longitude, "longitude")
             clean_date = validate_date(str(planning_date))
+
+            with st.spinner(f"Looking up {clean_location}..."):
+                clean_lat, clean_lon = weather_service.geocode_location(clean_location)
         except ValidationError as e:
             st.error(f"Invalid input: {e}")
             # st.stop() halts execution of the rest of the script for this
