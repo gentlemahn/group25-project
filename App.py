@@ -239,11 +239,8 @@ for _ in range(cfg["count"]):
     delay = random.uniform(0, 6)
     size = random.uniform(14, 26)
     drift = random.uniform(-60, 60)
-    if season == "Summer (sun)":
-        top = random.uniform(0, 85)
-        particles_html += f'<div class="particle" style="left:{left}%; top:{top}%; animation-name:{cfg["anim"]}; animation-duration:{duration}s; animation-delay:{delay}s; font-size:{size}px;">{cfg["emoji"]}</div>'
-    else:
-        particles_html += f'<div class="particle" style="left:{left}%; top:-40px; --drift:{drift}px; animation-name:{cfg["anim"]}; animation-duration:{duration}s; animation-delay:{delay}s; font-size:{size}px;">{cfg["emoji"]}</div>'
+
+    particles_html += f'<div class="particle" style="left:{left}%; top:-40px; --drift:{drift}px; animation-name:{cfg["anim"]}; animation-duration:{duration}s; animation-delay:{delay}s; font-size:{size}px;">{cfg["emoji"]}</div>'
 
 stars_html = ""
 for _ in range(40):
@@ -252,40 +249,6 @@ for _ in range(40):
     ssize = random.uniform(1.5, 3)
     sdelay = random.uniform(0, 4)
     stars_html += f'<div class="star" style="left:{sleft}%; top:{stop}%; width:{ssize}px; height:{ssize}px; animation-delay:{sdelay}s;"></div>'
-
-day_night_stages = [
-    (0,   "#FFDAB9", "#87CEEB"),
-    (16,  "#FFD580", "#FFA500"),
-    (32,  "#C97A5A", "#8A5A8A"),
-    (48,  "#0D0D14", "#050508"),
-    (64,  "#0D0D18", "#1A1A2E"),
-    (80,  "#E88C6E", "#FFB88C"),
-    (100, "#FFDAB9", "#87CEEB"),
-]
-
-def lerp_color(c1, c2, t):
-    c1 = c1.lstrip("#")
-    c2 = c2.lstrip("#")
-    r1, g1, b1 = int(c1[0:2], 16), int(c1[2:4], 16), int(c1[4:6], 16)
-    r2, g2, b2 = int(c2[0:2], 16), int(c2[2:4], 16), int(c2[4:6], 16)
-    r = round(r1 + (r2 - r1) * t)
-    g = round(g1 + (g2 - g1) * t)
-    b = round(b1 + (b2 - b1) * t)
-    return f"#{r:02X}{g:02X}{b:02X}"
-
-def color_at_percent(p):
-    for i in range(len(day_night_stages) - 1):
-        p0, top0, bot0 = day_night_stages[i]
-        p1, top1, bot1 = day_night_stages[i + 1]
-        if p0 <= p <= p1:
-            t = 0 if p1 == p0 else (p - p0) / (p1 - p0)
-            return lerp_color(top0, top1, t), lerp_color(bot0, bot1, t)
-    return day_night_stages[-1][1], day_night_stages[-1][2]
-
-keyframe_lines = ""
-for pct in range(0, 101):
-    top, bottom = color_at_percent(pct)
-    keyframe_lines += f"{pct}% {{ background: linear-gradient(180deg, {top}, {bottom}); }}\n"
 
 st.markdown(f"""
 <style>
@@ -428,11 +391,6 @@ div[data-testid="stForm"] {{
     50%  {{ transform: translateY(55vh) translateX(var(--drift)) rotate(200deg); opacity: 0.8; }}
     100% {{ transform: translateY(110vh) translateX(-20px) rotate(400deg); opacity: 0.2; }}
 }}
-@keyframes sunSparkle {{
-    0%, 100% {{ opacity: 0.2; transform: scale(0.8); }}
-    50%      {{ opacity: 1;   transform: scale(1.2); }}
-}}
-
 .fade-in {{ animation: fadeIn 1.2s ease; }}
 @keyframes fadeIn {{ from {{ opacity: 0; }} to {{ opacity: 1; }} }}
 
