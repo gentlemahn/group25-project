@@ -1,5 +1,4 @@
 import streamlit as st
-import random
 from datetime import date as dt_date, datetime, timedelta
 from config import SUPPORTED_CROPS
 from theme import render_theme, SEASON_CONFIG
