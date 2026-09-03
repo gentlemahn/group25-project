@@ -1,11 +1,11 @@
 import streamlit as st
-from datetime import date as dt_date, datetime, timedelta
+from datetime import date as dt_date
 from config import SUPPORTED_CROPS
-from theme import render_theme, SEASON_CONFIG
+from theme import render_theme
 
 # Real backend modules — replacing the dummy data above.
-from validators import validate_location_name, validate_coordinate, validate_date, ValidationError
-from data_models import FarmPlot, LogEntry, MONTHS, CROP_PROFILES, generate_season_calendar
+from validators import validate_location_name, validate_date, ValidationError
+from data_models import FarmPlot, LogEntry, MONTHS, generate_season_calendar
 from weather_service import WeatherService, WeatherServiceError, check_weather_threats
 from storage import PlotStorage, StorageError
 from AI_advisor import AIAdvisor, AIAdvisorError
@@ -49,8 +49,9 @@ except StorageError as e:
 st.set_page_config(page_title="Smart Farming Advisor", page_icon="🧑‍🌾", layout="wide")
 st.title("Smart Farming Advisor")
 
-season = st.selectbox("Season", ["Spring (rain)", "Summer (sun)", "Autumn (leaves)", "Winter (snow)"])
-render_theme(season)
+with st.container(border=True):
+    season = st.selectbox("Season", ["Spring (rain)", "Summer (sun)", "Autumn (leaves)", "Winter (snow)"])
+    render_theme(season)
 
 col1, col2 = st.columns(2)
 col1.metric("Total plots", len(saved_plots))
