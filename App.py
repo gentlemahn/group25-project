@@ -10,19 +10,9 @@ from weather_service import WeatherService, WeatherServiceError, check_weather_t
 from storage import PlotStorage, StorageError
 from AI_advisor import AIAdvisor, AIAdvisorError
 
-# Each of these is created ONCE when the script first loads. Streamlit
-# reruns this whole file on every click, but module-level code like this
-# only re-executes the cheap parts — these objects don't hold open
-# connections, so creating them fresh each rerun is fine and simple.
 weather_service = WeatherService()
 storage = PlotStorage()
 
-
-
-# The AIAdvisor is a bit more expensive to create (it validates the API key
-# and sets up the Gemini client), and if the key is missing we want the
-# WHOLE APP to still load and show a clear error, rather than crash before
-# a single line of UI renders. So we wrap this one in try/except.
 try:
     advisor = AIAdvisor()
     advisor_error = None
@@ -30,9 +20,6 @@ except AIAdvisorError as e:
     advisor = None
     advisor_error = str(e)
 
-# Load real saved data from disk instead of hardcoded dummy lists.
-# Both load_plots() and load_logs() return [] if no file exists yet,
-# so a brand-new install just shows "no plots yet" instead of crashing.
 try:
     saved_plots = storage.load_plots()
 except StorageError as e:
@@ -46,7 +33,7 @@ except StorageError as e:
     st.error(f"Couldn't load saved logs: {e}")
 
 
-st.set_page_config(page_title="Smart Farming Advisor", page_icon="🧑‍🌾", layout="wide")
+st.set_page_config(page_title="Smart Farming Advisor", page_icon="🧑‍🌾", layout="centered")
 st.title("Smart Farming Advisor")
 
 with st.container(border=True):
@@ -82,10 +69,6 @@ with tab1:
         submitted = st.form_submit_button("Get Planting advice")
 
     if submitted:
-        # --- Step 1: validate inputs (Person 1's regex-based validators) ---
-        # We validate everything BEFORE touching the network. No point
-        # calling a weather API with a location name that has invalid
-        # characters in it — fail cheap and fast first.
         try:
             clean_location = validate_location_name(location_name)
             clean_date = validate_date(str(planning_date))
@@ -94,12 +77,11 @@ with tab1:
                 clean_lat, clean_lon = weather_service.geocode_location(clean_location)
         except ValidationError as e:
             st.error(f"Invalid input: {e}")
-            # st.stop() halts execution of the rest of the script for this
-            # rerun. Without it, the code below would still try to run
-            # with variables like clean_location that were never created.
+            st.stop()
+        except WeatherServiceError as e:
+            st.error(f"Location lookup error: {e}")
             st.stop()
 
-        # --- Step 2: fetch real weather data (Person 3's WeatherService) ---
         try:
             with st.spinner("Fetching weather data..."):
                 conditions = weather_service.get_conditions(clean_lat, clean_lon)
@@ -107,9 +89,7 @@ with tab1:
             st.error(f"Weather error: {e}")
             st.stop()
 
-        # --- Step 3: get AI planting advice (your AIAdvisor) ---
         if advisor is None:
-            # This happens if GEMINI_API_KEY was missing when the app started.
             advice = f"AI advice unavailable: {advisor_error}"
         else:
             try:
@@ -118,19 +98,8 @@ with tab1:
                         crop=crop, location=clean_location, weather_dict=conditions
                     )
             except AIAdvisorError as e:
-                # We deliberately DON'T st.stop() here. Losing the AI text
-                # is disappointing but not critical — the farmer's plot and
-                # weather reading are still worth saving. A totally failed
-                # weather/validation step above is worse, so those DO stop.
-                #
-                # We put the real error message INSIDE advice itself (instead
-                # of a separate st.warning() call) because Step 5 stashes
-                # `advice` into session_state before st.rerun() fires — a
-                # bare st.warning() here would get wiped out by that rerun
-                # before you ever got to read it.
                 advice = f"AI advice unavailable right now. Error: {e}"
 
-        # --- Step 4: build and save the plot + log entry ---
         try:
             plot = FarmPlot(
                 crop=crop,
@@ -154,14 +123,6 @@ with tab1:
             st.error(f"Storage error: {e}")
             st.stop()
 
-        # --- Step 5: stash the results in session_state, then refresh ---
-        # st.rerun() restarts the script from the top immediately, which is
-        # needed so the "Saved Plots"/"Log history" tabs and the metric
-        # counters pick up the new plot/log right away. But that rerun
-        # happens instantly — anything just printed with st.write/st.info
-        # would flash and vanish before you could read it. Storing the
-        # result in session_state means it survives the rerun and renders
-        # normally on the next pass through this code.
         st.session_state.last_result = {
             "crop": crop,
             "location": clean_location,
@@ -172,7 +133,6 @@ with tab1:
         }
         st.rerun()
 
-    # Show the most recent result, if any — persists across the rerun above.
     if "last_result" in st.session_state:
         result = st.session_state.last_result
         st.success(f"Saved {result['crop']} at {result['location']}. Current temp: {result['temperature']}°C")

@@ -1,5 +1,6 @@
 import requests
 from config import OPEN_METEO_FORECAST_URL, OPEN_METEO_GEOCODING_URL
+from validators import validate_coordinate, ValidationError
 
 HEAVY_RAIN_MM = 50
 DRY_SPELL_DAYS = 7
@@ -96,30 +97,18 @@ class WeatherService:
             )
 
         top_match = results[0]
-        return top_match["latitude"], top_match["longitude"]
+        lat, lon = top_match["latitude"], top_match["longitude"]
 
+        # Even though Open-Meteo should always return sane
+        # values, we validate them before trusting an external API's
+        # response, rather than assuming it's always correct.
+        try:
+            validate_coordinate(lat, "latitude")
+            validate_coordinate(lon, "longitude")
+        except ValidationError:
+            raise WeatherServiceError(f"Location lookup for '{location_name}' returned invalid coordinates.")
 
-# ============================================================
-# Weather threat checker
-# ============================================================
-# Thresholds here are real, commonly-cited meteorological/agronomic
-# standards (not arbitrary numbers), so this works for any location
-# worldwide that Open-Meteo covers — the same thresholds apply whether
-# the plot is in Nigeria, Brazil, or Vietnam:
-#
-#  - Heavy rain: >=50mm in 24 hours is widely used by national
-#    meteorological services (WMO-aligned) as the threshold for
-#    "heavy rain" warnings.
-#  - Dry spell: agricultural advisories commonly flag 7+ consecutive
-#    days with under 1mm rain as a dry-spell risk to crop water needs.
-#  - Heat stress: most staple crops (maize, rice, etc.) begin showing
-#    heat stress above roughly 35°C, per crop physiology literature.
-#    We check BOTH the current reading (immediate alert) and the 7-day
-#    forecasted daily highs from weather_service.py's temperature_max_forecast_c
-#    (a true multi-day heatwave check — 3+ consecutive hot days is a
-#    commonly used meteorological definition of a heatwave).
-
-
+        return lat, lon
 def check_weather_threats(conditions: dict) -> list:
     """Returns a list of plain-language warning strings, or [] if nothing
     of concern is forecast."""
