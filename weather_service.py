@@ -1,6 +1,12 @@
 import requests
 from config import OPEN_METEO_FORECAST_URL, OPEN_METEO_GEOCODING_URL
 
+HEAVY_RAIN_MM = 50
+DRY_SPELL_DAYS = 7
+DRY_DAY_THRESHOLD_MM = 1.0
+HEAT_STRESS_C = 35
+HEATWAVE_CONSECUTIVE_DAYS = 3
+
 
 class WeatherServiceError(Exception):
     # raised whenever something goes wrong talking to Open-Meteo
@@ -91,3 +97,100 @@ class WeatherService:
 
         top_match = results[0]
         return top_match["latitude"], top_match["longitude"]
+
+
+# ============================================================
+# Weather threat checker
+# ============================================================
+# Thresholds here are real, commonly-cited meteorological/agronomic
+# standards (not arbitrary numbers), so this works for any location
+# worldwide that Open-Meteo covers — the same thresholds apply whether
+# the plot is in Nigeria, Brazil, or Vietnam:
+#
+#  - Heavy rain: >=50mm in 24 hours is widely used by national
+#    meteorological services (WMO-aligned) as the threshold for
+#    "heavy rain" warnings.
+#  - Dry spell: agricultural advisories commonly flag 7+ consecutive
+#    days with under 1mm rain as a dry-spell risk to crop water needs.
+#  - Heat stress: most staple crops (maize, rice, etc.) begin showing
+#    heat stress above roughly 35°C, per crop physiology literature.
+#    We check BOTH the current reading (immediate alert) and the 7-day
+#    forecasted daily highs from weather_service.py's temperature_max_forecast_c
+#    (a true multi-day heatwave check — 3+ consecutive hot days is a
+#    commonly used meteorological definition of a heatwave).
+
+
+def check_weather_threats(conditions: dict) -> list:
+    """Returns a list of plain-language warning strings, or [] if nothing
+    of concern is forecast."""
+    warnings = []
+
+    rain_forecast = conditions.get("rain_forecast_mm", [])
+    forecast_dates = conditions.get("forecast_dates", [])
+
+    # --- Heavy rain check ---
+    for i, mm in enumerate(rain_forecast):
+        if mm is not None and mm >= HEAVY_RAIN_MM:
+            day_label = forecast_dates[i] if i < len(forecast_dates) else f"day {i + 1}"
+            warnings.append(f"Heavy rain expected on {day_label} ({mm}mm) — risk of waterlogging or erosion.")
+        
+    TOTAL_WEEKLY_RAIN_MM = 70  # cumulative rain over the week that's worth flagging
+
+    # --- Sustained heavy rain check (total, not just single-day) ---
+    total_rain = sum(mm for mm in rain_forecast if mm is not None)
+    if total_rain >= TOTAL_WEEKLY_RAIN_MM:
+        warnings.append(f"Sustained heavy rain expected this week — {total_rain}mm total forecast. Risk of waterlogging.")
+
+    # --- Dry spell check ---
+    # We scan the week for the LONGEST run of consecutive dry days,
+    # not just whether the whole week is dry.
+    consecutive_dry = 0
+    longest_dry_run = 0
+    for mm in rain_forecast:
+        if mm is not None and mm < DRY_DAY_THRESHOLD_MM:
+            consecutive_dry += 1
+            longest_dry_run = max(longest_dry_run, consecutive_dry)
+        else:
+            consecutive_dry = 0  # any real rain resets the streak
+    if longest_dry_run >= DRY_SPELL_DAYS:
+        warnings.append(
+            f"Dry spell risk: {longest_dry_run} consecutive days with little or no rain forecast."
+        )
+
+    # --- Heat stress check ---
+    # 1) Immediate alert: is it hot RIGHT NOW?
+    temp = conditions.get("temperature_Celsius")
+    if temp is not None and temp >= HEAT_STRESS_C:
+        warnings.append(f"High temperature alert: {temp}°C right now — heat stress risk for most crops.")
+
+    # 2) True heatwave check: are there 3+ CONSECUTIVE forecasted days
+    # with a daily high above the threshold? A single hot day isn't a
+    # heatwave — a sustained run of them is what actually stresses crops
+    # and depletes soil moisture faster than expected.
+    max_temps = conditions.get("temperature_max_forecast_c", [])
+    consecutive_hot = 0
+    longest_hot_run = 0
+    hot_run_start_index = None
+    longest_run_start_index = None
+    for i, day_max in enumerate(max_temps):
+        if day_max is not None and day_max >= HEAT_STRESS_C:
+            if consecutive_hot == 0:
+                hot_run_start_index = i
+            consecutive_hot += 1
+            if consecutive_hot > longest_hot_run:
+                longest_hot_run = consecutive_hot
+                longest_run_start_index = hot_run_start_index
+        else:
+            consecutive_hot = 0
+    if longest_hot_run >= HEATWAVE_CONSECUTIVE_DAYS:
+        start_label = (
+            forecast_dates[longest_run_start_index]
+            if longest_run_start_index is not None and longest_run_start_index < len(forecast_dates)
+            else "the coming days"
+        )
+        warnings.append(
+            f"Heatwave risk: {longest_hot_run} consecutive days forecast at or above "
+            f"{HEAT_STRESS_C}°C, starting {start_label}."
+        )
+
+    return warnings
